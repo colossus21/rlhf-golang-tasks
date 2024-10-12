@@ -197,7 +197,7 @@ func createProduct(c *gin.Context) {
 
 func setupRoutes(r *gin.Engine) {
 	r.POST("/signup", signUp)
-	r.POST("/signin", signIn)
+	r.POST("/+", signIn)
 
 	authGroup := r.Group("/auth")
 	authGroup.Use(authMiddleware())
