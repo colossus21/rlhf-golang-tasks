@@ -2,7 +2,8 @@
 
 1. Running samples:
 ```
-go run -tags v1 task_191462/v1.go
+cd task_id
+go run -tags v1 v1.go
 ```
 
 2. Running tests:
