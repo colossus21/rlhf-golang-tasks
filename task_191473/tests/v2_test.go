@@ -1,30 +1,26 @@
-// File: v1_test.go
+// File: v2_test.go
 
 package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 )
 
-// Config struct from v1
+// Config struct from v2
 type Config struct {
 	LogDir string
 	// Other fields omitted for brevity
 }
 
-// CreateLogDir function from v1
-func CreateLogDir(cfg *Config) error {
-	if cfg.LogDir == "" {
-		return nil // No custom log directory specified, use default
-	}
-
-	err := os.MkdirAll(cfg.LogDir, 0755)
-	if err != nil {
-		return fmt.Errorf("failed to create log directory: %w", err)
+// createLogDir function from v2
+func createLogDir(dir string) error {
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
 	}
 	return nil
 }
@@ -36,26 +32,27 @@ type Logger interface {
 
 // Simple logger implementation for testing
 type testLogger struct {
-	logFile *os.File
+	writer io.Writer
 }
 
 func (l *testLogger) Info(args ...interface{}) {
-	fmt.Fprintf(l.logFile, "%s INFO %s\n", time.Now().Format(time.RFC3339), fmt.Sprint(args...))
+	fmt.Fprintf(l.writer, "%s INFO %s\n", time.Now().Format(time.RFC3339), fmt.Sprint(args...))
 }
 
 // SetupLogger function adapted for testing
 func SetupLogger(cfg *Config) (Logger, error) {
 	if cfg.LogDir == "" {
-		return nil, fmt.Errorf("log directory not specified")
+		return &testLogger{writer: os.Stdout}, nil
 	}
 
-	logFilePath := filepath.Join(cfg.LogDir, "rfid-backend.log")
-	file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	logFilePath := filepath.Join(cfg.LogDir, "app.log")
+	file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open log file: %v", err)
+		return nil, fmt.Errorf("error opening log file: %s", err)
 	}
 
-	return &testLogger{logFile: file}, nil
+	multiWriter := io.MultiWriter(file, os.Stdout)
+	return &testLogger{writer: multiWriter}, nil
 }
 
 // Test cases
@@ -68,9 +65,9 @@ func TestCase01LogDirectoryCreation(t *testing.T) {
 		}
 
 		// Check: Implement a function to create this directory if it doesn't already exist.
-		err := CreateLogDir(cfg)
+		err := createLogDir(cfg.LogDir)
 		if err != nil {
-			t.Errorf("CreateLogDir returned an error: %v", err)
+			t.Errorf("createLogDir returned an error: %v", err)
 		}
 		if _, err := os.Stat(tempDir); os.IsNotExist(err) {
 			t.Errorf("Log directory was not created")
@@ -88,9 +85,9 @@ func TestCase02LogFileCreationAndWriting(t *testing.T) {
 		cfg := &Config{
 			LogDir: tempDir,
 		}
-		err := CreateLogDir(cfg)
+		err := createLogDir(cfg.LogDir)
 		if err != nil {
-			t.Fatalf("CreateLogDir returned an error: %v", err)
+			t.Fatalf("createLogDir returned an error: %v", err)
 		}
 
 		// Check: Update the logging setup to write logs to a file in this directory
@@ -102,7 +99,7 @@ func TestCase02LogFileCreationAndWriting(t *testing.T) {
 			t.Fatalf("SetupLogger returned nil logger")
 		}
 
-		logFile := filepath.Join(tempDir, "rfid-backend.log")
+		logFile := filepath.Join(tempDir, "app.log")
 		if _, err := os.Stat(logFile); os.IsNotExist(err) {
 			t.Errorf("Log file was not created")
 		}
@@ -131,9 +128,9 @@ func TestCase03LogTimestamps(t *testing.T) {
 		cfg := &Config{
 			LogDir: tempDir,
 		}
-		err := CreateLogDir(cfg)
+		err := createLogDir(cfg.LogDir)
 		if err != nil {
-			t.Fatalf("CreateLogDir returned an error: %v", err)
+			t.Fatalf("createLogDir returned an error: %v", err)
 		}
 
 		logger, err := SetupLogger(cfg)
@@ -144,7 +141,7 @@ func TestCase03LogTimestamps(t *testing.T) {
 		// Check: ensure that logs include timestamps for better traceability
 		logger.Info("Test log entry for timestamp")
 
-		logFile := filepath.Join(tempDir, "rfid-backend.log")
+		logFile := filepath.Join(tempDir, "app.log")
 		content, err := os.ReadFile(logFile)
 		if err != nil {
 			t.Fatalf("Failed to read log file: %v", err)
@@ -173,9 +170,9 @@ func TestCase04ErrorHandling(t *testing.T) {
 		}
 
 		// Check: implement error handling that logs any issues encountered during the creation of the log directory
-		err := CreateLogDir(cfg)
+		err := createLogDir(cfg.LogDir)
 		if err == nil {
-			t.Errorf("CreateLogDir should return an error for invalid directory")
+			t.Errorf("createLogDir should return an error for invalid directory")
 		}
 
 		// Check: implement error handling when opening the log file

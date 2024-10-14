@@ -161,14 +161,11 @@ func loadConfig() interface{} {
 	}
 
 	// LoadConfig returns a singleton instance of Config.
-	func
-	LoadConfig() * Config{
+	func LoadConfig() * Config {
 		return configInstance.Get(loadConfig).(*Config)
 	}
 
-	func
-	main()
-	{
+	func main() {
 		fmt.Println("Starting RFID Backend - Access Control System")
 
 		cfg := LoadConfig()

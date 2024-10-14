@@ -10,13 +10,25 @@ import (
 	"time"
 )
 
-// Config struct from v1
+// Config struct from config package
 type Config struct {
-	LogDir string
-	// Other fields omitted for brevity
+	CertFile                string
+	DatabasePath            string
+	KeyFile                 string
+	TagIdFieldName          string
+	TrainingFieldName       string
+	WildApricotAccountId    int
+	ContactFilterQuery      string
+	SSOClientID             string
+	SSOClientSecret         string
+	SSORedirectURI          string
+	CookieStoreSecret       string
+	WildApricotApiKey       string
+	WildApricotWebhookToken string
+	LogDir                  string
 }
 
-// CreateLogDir function from v1
+// CreateLogDir function from config package
 func CreateLogDir(cfg *Config) error {
 	if cfg.LogDir == "" {
 		return nil // No custom log directory specified, use default
@@ -29,21 +41,42 @@ func CreateLogDir(cfg *Config) error {
 	return nil
 }
 
-// Simple logger interface for testing
+// Logger interface (simplified for testing)
 type Logger interface {
 	Info(args ...interface{})
+	Warn(args ...interface{})
+	Error(args ...interface{})
+	Fatal(args ...interface{})
 }
 
-// Simple logger implementation for testing
-type testLogger struct {
-	logFile *os.File
+// SimpleLogger implements Logger interface for testing
+type SimpleLogger struct {
+	file *os.File
 }
 
-func (l *testLogger) Info(args ...interface{}) {
-	fmt.Fprintf(l.logFile, "%s INFO %s\n", time.Now().Format(time.RFC3339), fmt.Sprint(args...))
+func (l *SimpleLogger) log(level, message string) {
+	timestamp := time.Now().Format(time.RFC3339)
+	fmt.Fprintf(l.file, "%s [%s] %s\n", timestamp, level, message)
 }
 
-// SetupLogger function adapted for testing
+func (l *SimpleLogger) Info(args ...interface{}) {
+	l.log("INFO", fmt.Sprint(args...))
+}
+
+func (l *SimpleLogger) Warn(args ...interface{}) {
+	l.log("WARN", fmt.Sprint(args...))
+}
+
+func (l *SimpleLogger) Error(args ...interface{}) {
+	l.log("ERROR", fmt.Sprint(args...))
+}
+
+func (l *SimpleLogger) Fatal(args ...interface{}) {
+	l.log("FATAL", fmt.Sprint(args...))
+	os.Exit(1)
+}
+
+// SetupLogger function from setup package
 func SetupLogger(cfg *Config) (Logger, error) {
 	if cfg.LogDir == "" {
 		return nil, fmt.Errorf("log directory not specified")
@@ -55,7 +88,7 @@ func SetupLogger(cfg *Config) (Logger, error) {
 		return nil, fmt.Errorf("failed to open log file: %v", err)
 	}
 
-	return &testLogger{logFile: file}, nil
+	return &SimpleLogger{file: file}, nil
 }
 
 // Test cases
@@ -154,9 +187,11 @@ func TestCase03LogTimestamps(t *testing.T) {
 			t.Fatalf("Log file is empty")
 		}
 
-		// Simple check for timestamp format (YYYY-MM-DD)
-		if len(content) < 10 || string(content[:4]) != time.Now().Format("2006") {
-			t.Errorf("Log entry does not start with a timestamp")
+		// Check for timestamp in RFC3339 format
+		timestamp := string(content[:20]) // First 20 characters should be the timestamp
+		_, err = time.Parse(time.RFC3339, timestamp)
+		if err != nil {
+			t.Errorf("Log entry does not start with a valid RFC3339 timestamp: %v", err)
 		}
 
 		// Cleanup
