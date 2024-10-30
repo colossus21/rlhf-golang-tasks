@@ -1,9 +1,10 @@
+//go:build v1
+// +build v1
+
 package main
 
 import (
-	"fyne.io/fyne/v2"
 	"io/fs"
-	"os"
 	"path/filepath"
 
 	"fyne.io/fyne/v2/app"
