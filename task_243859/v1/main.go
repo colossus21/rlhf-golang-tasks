@@ -1,13 +1,12 @@
 package main
 
 import (
-	"awesomeProject/v1"
 	"log"
 	"net/http"
 )
 
 func main() {
-	app, err := v1.NewApplication()
+	app, err := NewApplication()
 	if err != nil {
 		log.Fatal(err)
 	}
