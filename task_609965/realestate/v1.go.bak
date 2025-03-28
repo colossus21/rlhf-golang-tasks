@@ -1,0 +1,77 @@
+package realestate
+
+import (
+	"errors"
+)
+
+// Property represents a real estate property with its ID, price, size, and status.
+type Property struct {
+	ID     int     // Unique identifier for the property.
+	Price  float64 // Price of the property.
+	Size   float64 // Size of the property (e.g., square footage).
+	Status string  // Current status of the property (e.g., "available", "sold", "pending").
+}
+
+// NewProperty creates a new Property with the given ID, price, and size.
+// It initializes the property status to "available".
+func NewProperty(id int, price, size float64) *Property {
+	return &Property{
+		ID:     id,
+		Price:  price,
+		Size:   size,
+		Status: "available",
+	}
+}
+
+// RealEstateSystem manages a collection of properties.
+type RealEstateSystem struct {
+	Properties []*Property // Slice to store all the properties in the system.
+}
+
+// NewRealEstateSystem creates a new RealEstateSystem with an empty slice of properties.
+func NewRealEstateSystem() *RealEstateSystem {
+	return &RealEstateSystem{
+		Properties: make([]*Property, 0),
+	}
+}
+
+// AddProperty adds a new property to the RealEstateSystem.
+func (res *RealEstateSystem) AddProperty(property *Property) {
+	res.Properties = append(res.Properties, property)
+}
+
+// UpdatePropertyStatus updates the status of a property with the given ID.
+// It returns an error if the property is not found.
+func (res *RealEstateSystem) UpdatePropertyStatus(propertyID int, newStatus string) error {
+	for _, property := range res.Properties {
+		if property.ID == propertyID {
+			property.Status = newStatus
+			return nil // Successfully updated the status, return nil error.
+		}
+	}
+	return errors.New("property not found") // Return error if the property is not found.
+}
+
+// FilterByPriceRange filters properties based on a specified price range.
+// It returns a new slice of properties that fall within the given price range (inclusive).
+func (res *RealEstateSystem) FilterByPriceRange(minPrice, maxPrice float64) []*Property {
+	filteredProperties := make([]*Property, 0) // Initialize an empty slice to hold filtered properties.
+	for _, property := range res.Properties {
+		if property.Price >= minPrice && property.Price <= maxPrice {
+			filteredProperties = append(filteredProperties, property)
+		}
+	}
+	return filteredProperties // Return the slice of properties within the price range.
+}
+
+// FilterBySizePreference filters properties based on a specified size range.
+// It returns a new slice of properties that fall within the given size range (inclusive).
+func (res *RealEstateSystem) FilterBySizePreference(minSize, maxSize float64) []*Property {
+	filteredProperties := make([]*Property, 0) // Initialize an empty slice to hold filtered properties.
+	for _, property := range res.Properties {
+		if property.Size >= minSize && property.Size <= maxSize {
+			filteredProperties = append(filteredProperties, property)
+		}
+	}
+	return filteredProperties // Return the slice of properties within the size range.
+}
